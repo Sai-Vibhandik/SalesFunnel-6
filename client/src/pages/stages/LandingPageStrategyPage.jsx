@@ -1,0 +1,448 @@
+import { useEffect, useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Card, CardBody, CardHeader, Button, Input, Textarea, Spinner } from '@/components/ui';
+import { StageProgressTracker } from '@/components/workflow';
+import { ArrowLeft, ArrowRight, Users, Code, Palette } from 'lucide-react';
+import { projectService } from '@/services/api';
+
+const LANDING_PAGE_TYPES = [
+  { id: 'video_sales_letter', label: 'Video Sales Letter', icon: '🎥' },
+  { id: 'long_form', label: 'Long-form Page', icon: '📄' },
+  { id: 'lead_magnet', label: 'Lead Magnet', icon: '🧲' },
+  { id: 'ebook', label: 'Ebook Page', icon: '📚' },
+  { id: 'webinar', label: 'Webinar Page', icon: '🖥️' },
+];
+
+const PLATFORMS = [
+  { id: 'facebook', label: 'Facebook' },
+  { id: 'instagram', label: 'Instagram' },
+  { id: 'youtube', label: 'YouTube' },
+  { id: 'google', label: 'Google Ads' },
+  { id: 'linkedin', label: 'LinkedIn' },
+  { id: 'tiktok', label: 'TikTok' },
+  { id: 'twitter', label: 'Twitter/X' },
+  { id: 'whatsapp', label: 'WhatsApp' },
+  { id: 'multi', label: 'Multi-Platform' },
+];
+
+export default function LandingPageStrategyPage() {
+  const [searchParams] = useSearchParams();
+  const projectId = searchParams.get('projectId');
+  const landingPageId = searchParams.get('landingPageId');
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [project, setProject] = useState(null);
+  const [designers, setDesigners] = useState([]);
+  const [developers, setDevelopers] = useState([]);
+
+  // Form state
+  const [name, setName] = useState('');
+  const [funnelType, setFunnelType] = useState('video_sales_letter');
+  const [hook, setHook] = useState('');
+  const [angle, setAngle] = useState('');
+  const [adPlatforms, setAdPlatforms] = useState(['facebook']);
+  const [cta, setCta] = useState('');
+  const [offer, setOffer] = useState('');
+  const [messaging, setMessaging] = useState('');
+  const [assignedDesigner, setAssignedDesigner] = useState('');
+  const [assignedDeveloper, setAssignedDeveloper] = useState('');
+
+  useEffect(() => {
+    if (!projectId) {
+      navigate('/projects');
+      return;
+    }
+    fetchData();
+  }, [projectId, landingPageId]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      const projectRes = await projectService.getProject(projectId);
+      setProject(projectRes.data);
+
+      // Extract designers and developers from project's assigned team
+      const assignedTeam = projectRes.data.assignedTeam || {};
+
+      // Get UI/UX Designers
+      const uiUxDesigners = assignedTeam.uiUxDesigners || [];
+      const uiUxDesignerLegacy = assignedTeam.uiUxDesigner;
+      const allDesigners = uiUxDesigners.length > 0 ? uiUxDesigners : (uiUxDesignerLegacy ? [uiUxDesignerLegacy] : []);
+      setDesigners(allDesigners);
+
+      // Get Developers
+      const developersList = assignedTeam.developers || [];
+      const developerLegacy = assignedTeam.developer;
+      const allDevelopers = developersList.length > 0 ? developersList : (developerLegacy ? [developerLegacy] : []);
+      setDevelopers(allDevelopers);
+
+      // Check if traffic strategy is completed
+      if (!projectRes.data.stages?.trafficStrategy?.isCompleted) {
+        toast.error('Complete Traffic Strategy first to access Landing Pages');
+        navigate('/projects');
+        return;
+      }
+
+      if (landingPageId) {
+        // Load specific landing page from embedded array
+        const lp = projectRes.data.landingPages?.find(lp => lp._id === landingPageId);
+        if (lp) {
+          setName(lp.name || '');
+          setFunnelType(lp.funnelType || 'video_sales_letter');
+          setHook(lp.hook || '');
+          setAngle(lp.angle || '');
+          setAdPlatforms(lp.adPlatforms || ['facebook']);
+          setCta(lp.cta || '');
+          setOffer(lp.offer || '');
+          setMessaging(lp.messaging || '');
+          setAssignedDesigner(lp.assignedDesigner?._id || lp.assignedDesigner?.toString() || '');
+          setAssignedDeveloper(lp.assignedDeveloper?._id || lp.assignedDeveloper?.toString() || '');
+        } else {
+          toast.error('Landing page not found');
+          navigate(`/landing-pages?projectId=${projectId}`);
+        }
+      } else {
+        // For new landing page, pre-select if only one designer/developer available
+        if (allDesigners.length === 1) {
+          setAssignedDesigner((allDesigners[0]._id || allDesigners[0])?.toString());
+        }
+        if (allDevelopers.length === 1) {
+          setAssignedDeveloper((allDevelopers[0]._id || allDevelopers[0])?.toString());
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      const errorMessage = error?.message || 'Failed to load landing page';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onSave = async () => {
+    if (!name.trim()) {
+      toast.error('Please enter a landing page name');
+      return;
+    }
+
+    if (!assignedDesigner) {
+      toast.error('Please select a UI/UX Designer for this landing page');
+      return;
+    }
+
+    if (!assignedDeveloper) {
+      toast.error('Please select a Developer for this landing page');
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const landingPageData = {
+        name,
+        funnelType,
+        hook,
+        angle,
+        adPlatforms,
+        cta,
+        offer,
+        messaging,
+        assignedDesigner,
+        assignedDeveloper,
+      };
+
+      if (landingPageId) {
+        // Update existing
+        await projectService.updateLandingPage(projectId, landingPageId, landingPageData);
+      } else {
+        // Create new
+        await projectService.addLandingPage(projectId, landingPageData);
+      }
+
+      toast.success('Landing page saved!');
+
+      // Navigate back to landing pages list
+      navigate(`/landing-pages?projectId=${projectId}`);
+    } catch (error) {
+      console.error('Error saving landing page:', error);
+      toast.error(error?.message || 'Failed to save landing page');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleContinue = async () => {
+    // Save first if there are unsaved changes
+    if (!name.trim()) {
+      toast.error('Please enter a landing page name before continuing');
+      return;
+    }
+
+    if (!assignedDesigner) {
+      toast.error('Please select a UI/UX Designer for this landing page');
+      return;
+    }
+
+    if (!assignedDeveloper) {
+      toast.error('Please select a Developer for this landing page');
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const landingPageData = {
+        name,
+        funnelType,
+        hook,
+        angle,
+        adPlatforms,
+        cta,
+        offer,
+        messaging,
+        assignedDesigner,
+        assignedDeveloper,
+      };
+
+      if (landingPageId) {
+        await projectService.updateLandingPage(projectId, landingPageId, landingPageData);
+      }
+
+      // Mark landing page stage as complete
+      try {
+        await projectService.completeLandingPageStage(projectId);
+        toast.success('Landing page stage completed!');
+      } catch (completeError) {
+        // Continue even if completion fails - backend allows access if landing pages exist
+        console.error('Error completing stage:', completeError);
+      }
+
+      // Navigate to creative strategy - no task generation
+      navigate(`/creative-strategy?projectId=${projectId}`);
+    } catch (error) {
+      console.error('Error saving landing page:', error);
+      toast.error(error?.message || 'Failed to save landing page');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" onClick={() => navigate(`/landing-pages?projectId=${projectId}`)} className="p-2">
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold text-gray-900">
+            {name || 'Landing Page Strategy'}
+          </h1>
+          <p className="text-gray-600 mt-1">{project?.businessName}</p>
+        </div>
+      </div>
+
+      {/* Progress */}
+      <Card>
+        <CardBody className="p-4">
+          <StageProgressTracker stages={project?.stages} currentStage={project?.currentStage} />
+        </CardBody>
+      </Card>
+
+      {/* Basic Info */}
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
+          <p className="text-sm text-gray-500">Name and platform for this landing page</p>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <Input
+            label="Landing Page Name"
+            placeholder="e.g., Main Landing Page, Campaign A, etc."
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Funnel Type</label>
+              <select
+                value={funnelType}
+                onChange={(e) => setFunnelType(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                {LANDING_PAGE_TYPES.map((type) => (
+                  <option key={type.id} value={type.id}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Ad Platforms</label>
+              <p className="text-xs text-gray-500 mb-2">Select all platforms where this landing page will be promoted</p>
+              <div className="flex flex-wrap gap-2">
+                {PLATFORMS.map((p) => {
+                  const isSelected = adPlatforms.includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          setAdPlatforms(adPlatforms.filter(id => id !== p.id));
+                        } else {
+                          setAdPlatforms([...adPlatforms, p.id]);
+                        }
+                      }}
+                      className={`px-3 py-2 rounded-lg border text-sm transition-all ${
+                        isSelected
+                          ? 'bg-primary-100 border-primary-300 text-primary-700'
+                          : 'bg-white border-gray-200 text-gray-600 hover:border-primary-200 hover:bg-primary-50'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Team Assignment */}
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Users className="w-5 h-5 text-primary-500" />
+            Team Assignment
+          </h2>
+          <p className="text-sm text-gray-500">Assign team members for this landing page</p>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <Palette className="w-4 h-4 text-purple-500" />
+                UI/UX Designer *
+              </label>
+              <select
+                value={assignedDesigner}
+                onChange={(e) => setAssignedDesigner(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="">Select Designer...</option>
+                {designers.map(d => (
+                  <option key={d._id || d} value={(d._id || d).toString()}>
+                    {d.name || 'Unknown'}
+                  </option>
+                ))}
+              </select>
+              {designers.length === 0 && (
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ No UI/UX Designers assigned to this project. Contact Admin.
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                <Code className="w-4 h-4 text-green-500" />
+                Developer *
+              </label>
+              <select
+                value={assignedDeveloper}
+                onChange={(e) => setAssignedDeveloper(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="">Select Developer...</option>
+                {developers.map(d => (
+                  <option key={d._id || d} value={(d._id || d).toString()}>
+                    {d.name || 'Unknown'}
+                  </option>
+                ))}
+              </select>
+              {developers.length === 0 && (
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ No Developers assigned to this project. Contact Admin.
+                </p>
+              )}
+            </div>
+          </div>
+          <p className="text-xs text-gray-500">
+            Each landing page needs one UI/UX Designer for design and one Developer for implementation.
+            These assignments will be used when generating tasks.
+          </p>
+        </CardBody>
+      </Card>
+
+      {/* Strategy Fields
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold text-gray-900">Strategy</h2>
+          <p className="text-sm text-gray-500">Define the hook and angle for this landing page</p>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <Textarea
+            label="Hook"
+            placeholder="What's the main hook that grabs attention?"
+            value={hook}
+            onChange={(e) => setHook(e.target.value)}
+            rows={2}
+          />
+          <Textarea
+            label="Angle"
+            placeholder="What's the creative angle or approach?"
+            value={angle}
+            onChange={(e) => setAngle(e.target.value)}
+            rows={2}
+          />
+          <Input
+            label="Call-to-Action (CTA)"
+            placeholder="e.g., Get Started Now"
+            value={cta}
+            onChange={(e) => setCta(e.target.value)}
+          />
+          <Input
+            label="Offer"
+            placeholder="What's the main offer?"
+            value={offer}
+            onChange={(e) => setOffer(e.target.value)}
+          />
+          <Textarea
+            label="Messaging"
+            placeholder="Key messaging and talking points"
+            value={messaging}
+            onChange={(e) => setMessaging(e.target.value)}
+            rows={3}
+          />
+        </CardBody>
+      </Card> */}
+
+      {/* Actions */}
+      <div className="flex justify-between gap-4">
+        <Button variant="secondary" onClick={() => navigate(`/landing-pages?projectId=${projectId}`)}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Landing Pages
+        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={onSave} loading={saving}>
+            Save
+          </Button>
+          <Button onClick={handleContinue} loading={saving}>
+            Continue to Creative Strategy
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
