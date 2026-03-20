@@ -163,15 +163,15 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleActivate = async () => {
-    try {
-      await projectService.toggleActivation(id, true);
-      toast.success('Project activated successfully');
-      fetchProject();
-    } catch (error) {
-      toast.error('Failed to activate project');
-    }
-  };
+  // const handleActivate = async () => {
+  //   try {
+  //     await projectService.toggleActivation(id, true);
+  //     toast.success('Project activated successfully');
+  //     fetchProject();
+  //   } catch (error) {
+  //     toast.error('Failed to activate project');
+  //   }
+  // };
 
   // Handle landing pages CRUD
   const handleLandingPagesSave = async (action, index, data) => {
@@ -302,9 +302,9 @@ export default function ProjectDetailPage() {
         <CardBody className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Project Progress</h2>
-            <span className="text-2xl font-bold text-primary-600">
+            {/* <span className="text-2xl font-bold text-primary-600">
               {project.overallProgress}%
-            </span>
+            </span> */}
           </div>
           <ProgressBar
             value={project.overallProgress}

@@ -51,7 +51,7 @@ export default function StageProgressTracker({ stages, currentStage }) {
                       'w-10 h-10 rounded-full flex items-center justify-center text-lg font-medium',
                       'transition-all duration-300',
                       status.isCompleted && 'bg-green-500 text-white',
-                      status.isCurrent && 'bg-primary-600 text-white ring-4 ring-primary-100',
+                      // status.isCurrent && 'bg-primary-600 text-white ring-4 ring-primary-100',
                       status.isLocked && 'bg-gray-200 text-gray-400'
                     )}
                   >
@@ -67,7 +67,7 @@ export default function StageProgressTracker({ stages, currentStage }) {
                     className={cn(
                       'mt-2 text-xs font-medium text-center whitespace-nowrap',
                       status.isCompleted && 'text-green-600',
-                      status.isCurrent && 'text-primary-600',
+                      // status.isCurrent && 'text-primary-600',
                       status.isLocked && 'text-gray-400'
                     )}
                   >
