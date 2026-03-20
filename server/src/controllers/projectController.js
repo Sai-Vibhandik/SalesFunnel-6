@@ -176,7 +176,10 @@ exports.getProject = async (req, res, next) => {
       .populate('assignedTeam.uiUxDesigner', 'name email specialization avatar')
       .populate('assignedTeam.graphicDesigner', 'name email specialization avatar')
       .populate('assignedTeam.developer', 'name email specialization avatar')
-      .populate('assignedTeam.tester', 'name email specialization avatar');
+      .populate('assignedTeam.tester', 'name email specialization avatar')
+      // Landing pages team assignments
+      .populate('landingPages.assignedDesigner', 'name email')
+      .populate('landingPages.assignedDeveloper', 'name email');
 
     if (!project) {
       return res.status(404).json({

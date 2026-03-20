@@ -51,15 +51,15 @@ exports.getTrafficStrategy = async (req, res, next) => {
       });
     }
 
-    // Check stage access
-    if (!project.stages.offerEngineering.isCompleted) {
+    let trafficStrategy = await TrafficStrategy.findOne({ projectId });
+
+    // Check stage access - allow if offer engineering is complete OR traffic strategy already exists (for editing)
+    if (!project.stages.offerEngineering.isCompleted && !trafficStrategy) {
       return res.status(403).json({
         success: false,
         message: 'Complete Offer Engineering first to access Traffic Strategy'
       });
     }
-
-    let trafficStrategy = await TrafficStrategy.findOne({ projectId });
 
     if (!trafficStrategy) {
       // Create default traffic strategy with all channels
@@ -128,14 +128,6 @@ exports.upsertTrafficStrategy = async (req, res, next) => {
       });
     }
 
-    // Check stage access
-    if (!project.stages.offerEngineering.isCompleted) {
-      return res.status(403).json({
-        success: false,
-        message: 'Complete Offer Engineering first to access Traffic Strategy'
-      });
-    }
-
     const {
       channels,
       hooks,
@@ -143,6 +135,17 @@ exports.upsertTrafficStrategy = async (req, res, next) => {
       totalBudget,
       isCompleted
     } = req.body;
+
+    // Check if traffic strategy already exists
+    const existingStrategy = await TrafficStrategy.findOne({ projectId });
+
+    // Check stage access - allow if offer engineering is complete OR traffic strategy already exists (for editing)
+    if (!project.stages.offerEngineering.isCompleted && !existingStrategy) {
+      return res.status(403).json({
+        success: false,
+        message: 'Complete Offer Engineering first to access Traffic Strategy'
+      });
+    }
 
     const trafficData = {
       projectId,

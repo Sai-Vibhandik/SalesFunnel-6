@@ -304,13 +304,12 @@ export default function PerformanceMarketerDashboard({ user }) {
         </Card>
       ) : (
         <>
-          {/* Active Projects Section */}
+          {/* All Projects Section */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Active Projects</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Projects</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {projects
-                .filter(p => p.isActive && p.status === 'active')
-                .slice(0, 4)
+                .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
                 .map((project) => {
                   const nextStage = getNextStage(project);
                   const progress = getStageProgress(project);
@@ -328,7 +327,9 @@ export default function PerformanceMarketerDashboard({ user }) {
                               <h3 className="text-lg font-semibold text-gray-900">
                                 {project.projectName || project.businessName}
                               </h3>
-                              <Badge variant="success">Active</Badge>
+                              <Badge variant={project.status === 'active' ? 'success' : project.status === 'completed' ? 'primary' : 'default'}>
+                                {project.status || 'Active'}
+                              </Badge>
                             </div>
                             <p className="text-sm text-gray-500">{project.customerName}</p>
                             {project.industry && (
@@ -450,63 +451,6 @@ export default function PerformanceMarketerDashboard({ user }) {
                 })}
             </div>
           </div>
-
-          {/* Other Projects */}
-          {projects.filter(p => !p.isActive || p.status !== 'active').length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Other Projects</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {projects
-                  .filter(p => !p.isActive || p.status !== 'active')
-                  .map((project) => {
-                    const progress = getStageProgress(project);
-
-                    return (
-                      <Card
-                        key={project._id}
-                        className="hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => navigate(`/projects/${project._id}`)}
-                      >
-                        <CardBody className="p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <h3 className="font-medium text-gray-900">
-                                {project.projectName || project.businessName}
-                              </h3>
-                              <p className="text-sm text-gray-500">{project.customerName}</p>
-                            </div>
-                            <Badge
-                              variant={
-                                project.status === 'completed' ? 'success' :
-                                project.status === 'paused' ? 'warning' : 'default'
-                              }
-                            >
-                              {project.status}
-                            </Badge>
-                          </div>
-
-                          <div className="mb-2">
-                            <div className="flex justify-between text-sm mb-1">
-                              <span className="text-gray-600">Progress</span>
-                              <span className="font-medium">{project.overallProgress}%</span>
-                            </div>
-                            <ProgressBar
-                              value={project.overallProgress}
-                              size="sm"
-                              color={project.overallProgress === 100 ? 'success' : 'primary'}
-                            />
-                          </div>
-
-                          <p className="text-xs text-gray-500">
-                            Updated {formatDate(project.updatedAt)}
-                          </p>
-                        </CardBody>
-                      </Card>
-                    );
-                  })}
-              </div>
-            </div>
-          )}
 
           {/* Quick Actions */}
           <Card>

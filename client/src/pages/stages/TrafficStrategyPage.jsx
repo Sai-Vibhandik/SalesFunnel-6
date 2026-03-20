@@ -388,17 +388,16 @@ export default function TrafficStrategyPage() {
 
       {/* Actions */}
       <div className="flex justify-end gap-4">
-        {!isCompleted ? (
-          <>
-            <Button variant="secondary" onClick={() => onSubmit(false)} loading={saving}>
-              Save Progress
-            </Button>
-            <Button onClick={() => onSubmit(true)} loading={saving}>
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Complete & Continue
-            </Button>
-          </>
-        ) : (
+        <Button variant="secondary" onClick={() => onSubmit(false)} loading={saving}>
+          Save Progress
+        </Button>
+        {!isCompleted && (
+          <Button onClick={() => onSubmit(true)} loading={saving}>
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Complete & Continue
+          </Button>
+        )}
+        {isCompleted && (
           <Button onClick={() => navigate(`/landing-pages?projectId=${projectId}`)}>
             Continue to Landing Pages
             <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />

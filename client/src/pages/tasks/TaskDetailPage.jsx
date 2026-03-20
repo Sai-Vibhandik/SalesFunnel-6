@@ -412,29 +412,39 @@ export default function TaskDetailPage() {
   };
 
   const canStartTask = () => {
+    // Performance marketers cannot start tasks
+    if (user?.role === 'performance_marketer') return false;
     // Standard tasks can be started from 'todo' status
     // Landing page tasks don't have an 'in_progress' status, so they can't be "started"
     return task && task.status === 'todo';
   };
 
   const canSubmitTask = () => {
+    // Performance marketers cannot submit tasks
+    if (user?.role === 'performance_marketer') return false;
     // Standard tasks can be submitted from 'in_progress' or 'rejected' status
     return task && ['in_progress', 'rejected'].includes(task.status);
   };
 
   const canSubmitContent = () => {
+    // Performance marketers cannot submit tasks
+    if (user?.role === 'performance_marketer') return false;
     // Content creator can submit from content_pending or content_rejected
     return task && ['content_pending', 'content_rejected'].includes(task.status) &&
            task.taskType === 'content_creation';
   };
 
   const canSubmitCreative = () => {
+    // Performance marketers cannot submit tasks
+    if (user?.role === 'performance_marketer') return false;
     // Graphic designer / Video Editor can submit from design_pending or design_rejected
     return task && ['design_pending', 'design_rejected'].includes(task.status) &&
            ['graphic_design', 'video_editing'].includes(task.taskType);
   };
 
   const canResubmitTask = () => {
+    // Performance marketers cannot submit tasks
+    if (user?.role === 'performance_marketer') return false;
     // For landing page tasks that have specific pending statuses after rejection
     // They can resubmit directly from design_pending or development_pending
     return task && ['design_pending', 'development_pending'].includes(task.status) &&
@@ -442,6 +452,8 @@ export default function TaskDetailPage() {
   };
 
   const canSubmitLandingPage = () => {
+    // Performance marketers cannot submit tasks
+    if (user?.role === 'performance_marketer') return false;
     // Landing page design/development tasks can be submitted directly from their pending states
     // Only if they haven't been rejected yet (first submission)
     return task && task.status === 'design_pending' && task.taskType === 'landing_page_design' &&
@@ -449,6 +461,8 @@ export default function TaskDetailPage() {
   };
 
   const canSubmitLandingPageDev = () => {
+    // Performance marketers cannot submit tasks
+    if (user?.role === 'performance_marketer') return false;
     return task && task.status === 'development_pending' && task.taskType === 'landing_page_development' &&
            !task.rejectionNote;
   };
@@ -1699,8 +1713,9 @@ export default function TaskDetailPage() {
                 </>
               )}
 
-              {/* ============ OTHER CREATIVE TASKS (Graphic Designer, etc.) ============ */}
-              {task.taskType !== 'landing_page_design' && task.taskType !== 'landing_page_development' && (
+              {/* ============ OTHER CREATIVE TASKS (Graphic Designer, Video Editor, etc.) ============ */}
+              {/* Content creation has its own form above, so exclude it here */}
+              {task.taskType !== 'landing_page_design' && task.taskType !== 'landing_page_development' && task.taskType !== 'content_creation' && (
                 <>
                   {/* Creative Link - Required */}
                   <div>

@@ -77,7 +77,9 @@ exports.upsertMarketResearch = async (req, res, next) => {
     }
 
     // Check if market research stage is accessible
-    if (!project.stages.onboarding.isCompleted) {
+    // Allow access if onboarding is complete OR if market research already exists (for editing)
+    const existingResearch = await MarketResearch.findOne({ projectId });
+    if (!project.stages.onboarding.isCompleted && !existingResearch) {
       return res.status(403).json({
         success: false,
         message: 'Complete Customer Onboarding first to access Market Research'

@@ -284,14 +284,14 @@ export default function ProjectDetailPage() {
             </>
           ) : (
             <>
-              <Button variant="secondary" onClick={() => navigate(`/projects/${id}/edit`)}>
+              {/* <Button variant="secondary" onClick={() => navigate(`/projects/${id}/edit`)}>
                 <Edit className="w-4 h-4 mr-2" />
                 Edit
               </Button>
               <Button variant="danger" onClick={handleDelete}>
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete
-              </Button>
+              </Button> */}
             </>
           )}
         </div>

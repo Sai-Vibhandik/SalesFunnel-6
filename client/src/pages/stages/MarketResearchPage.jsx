@@ -812,17 +812,16 @@ export default function MarketResearchPage() {
 
         {/* Actions */}
         <div className="flex justify-end gap-4">
-          {!isCompleted ? (
-            <>
-              <Button type="submit" variant="secondary" loading={saving}>
-                Save Progress
-              </Button>
-              <Button type="button" loading={saving} onClick={handleSubmit((data) => onSubmit(data, true))}>
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Complete & Continue
-              </Button>
-            </>
-          ) : (
+          <Button type="submit" variant="secondary" loading={saving}>
+            Save Progress
+          </Button>
+          {!isCompleted && (
+            <Button type="button" loading={saving} onClick={handleSubmit((data) => onSubmit(data, true))}>
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Complete & Continue
+            </Button>
+          )}
+          {isCompleted && (
             <Button type="button" onClick={() => navigate(`/offer-engineering?projectId=${projectId}`)}>
               Continue to Offer Engineering
               <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />

@@ -38,15 +38,16 @@ exports.getLandingPages = async (req, res, next) => {
       });
     }
 
-    // Check stage access
-    if (!project.stages.trafficStrategy.isCompleted) {
+    // Check stage access - allow if traffic strategy is complete OR landing pages exist
+    const existingLandingPages = await LandingPage.find({ projectId, isActive: true });
+    if (!project.stages.trafficStrategy.isCompleted && existingLandingPages.length === 0) {
       return res.status(403).json({
         success: false,
         message: 'Complete Traffic Strategy first to access Landing Page Strategy'
       });
     }
 
-    const landingPages = await LandingPage.find({ projectId, isActive: true })
+    const landingPages = existingLandingPages
       .sort({ order: 1 })
       .populate('createdBy', 'name email');
 
@@ -78,19 +79,21 @@ exports.getLandingPage = async (req, res, next) => {
       });
     }
 
-    // Check stage access
-    if (!project.stages.trafficStrategy.isCompleted) {
+    // Check stage access - allow editing if landing page exists, otherwise check traffic strategy completion
+    const existingLandingPage = await LandingPage.findOne({
+      _id: landingPageId,
+      projectId,
+      isActive: true
+    });
+
+    if (!project.stages.trafficStrategy.isCompleted && !existingLandingPage) {
       return res.status(403).json({
         success: false,
         message: 'Complete Traffic Strategy first to access Landing Page Strategy'
       });
     }
 
-    const landingPage = await LandingPage.findOne({
-      _id: landingPageId,
-      projectId,
-      isActive: true
-    }).populate('createdBy', 'name email');
+    const landingPage = existingLandingPage;
 
     if (!landingPage) {
       return res.status(404).json({
@@ -193,19 +196,20 @@ exports.updateLandingPage = async (req, res, next) => {
       });
     }
 
-    // Check stage access
-    if (!project.stages.trafficStrategy.isCompleted) {
-      return res.status(403).json({
-        success: false,
-        message: 'Complete Traffic Strategy first to access Landing Page Strategy'
-      });
-    }
-
+    // Check if landing page exists first - allow updating existing landing pages
     const landingPage = await LandingPage.findOne({
       _id: landingPageId,
       projectId,
       isActive: true
     });
+
+    // Only enforce stage gate when creating new landing pages
+    if (!landingPage && !project.stages.trafficStrategy.isCompleted) {
+      return res.status(403).json({
+        success: false,
+        message: 'Complete Traffic Strategy first to access Landing Page Strategy'
+      });
+    }
 
     if (!landingPage) {
       return res.status(404).json({
@@ -322,19 +326,20 @@ exports.completeLandingPage = async (req, res, next) => {
       });
     }
 
-    // Check stage access
-    if (!project.stages.trafficStrategy.isCompleted) {
-      return res.status(403).json({
-        success: false,
-        message: 'Complete Traffic Strategy first to access Landing Page Strategy'
-      });
-    }
-
+    // Check if landing page exists - allow completing existing landing pages
     const landingPage = await LandingPage.findOne({
       _id: landingPageId,
       projectId,
       isActive: true
     });
+
+    // Only enforce stage gate when creating new landing pages
+    if (!landingPage && !project.stages.trafficStrategy.isCompleted) {
+      return res.status(403).json({
+        success: false,
+        message: 'Complete Traffic Strategy first to access Landing Page Strategy'
+      });
+    }
 
     if (!landingPage) {
       return res.status(404).json({

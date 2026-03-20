@@ -40,20 +40,20 @@ exports.getCreativeStrategy = async (req, res, next) => {
       });
     }
 
-    // Check stage access - allow if landing pages exist or stage is marked complete
-    const hasLandingPages = project.landingPages && project.landingPages.length > 0;
-    if (!project.stages.landingPage.isCompleted && !hasLandingPages) {
-      return res.status(403).json({
-        success: false,
-        message: 'Add at least one landing page to access Creative Strategy'
-      });
-    }
-
     let creativeStrategy = await CreativeStrategy.findOne({ projectId })
       .populate('stages.creatives.assignedDesigner', 'name email')
       .populate('stages.creatives.assignedContentWriter', 'name email')
       .populate('creativePlan.assignedTeamMembers', 'name email')
       .populate('creativePlan.contentWriter', 'name email');
+
+    // Check stage access - allow if landing pages exist OR stage is marked complete OR creative strategy already exists
+    const hasLandingPages = project.landingPages && project.landingPages.length > 0;
+    if (!project.stages.landingPage.isCompleted && !hasLandingPages && !creativeStrategy) {
+      return res.status(403).json({
+        success: false,
+        message: 'Add at least one landing page to access Creative Strategy'
+      });
+    }
 
     if (!creativeStrategy) {
       // Create default creative strategy
@@ -99,15 +99,6 @@ exports.upsertCreativeStrategy = async (req, res, next) => {
       });
     }
 
-    // Check stage access - allow if landing pages exist or stage is marked complete
-    const hasLandingPages = project.landingPages && project.landingPages.length > 0;
-    if (!project.stages.landingPage.isCompleted && !hasLandingPages) {
-      return res.status(403).json({
-        success: false,
-        message: 'Add at least one landing page to access Creative Strategy'
-      });
-    }
-
     const {
       stages,
       creativeBrief,
@@ -118,6 +109,18 @@ exports.upsertCreativeStrategy = async (req, res, next) => {
       additionalNotes,
       isCompleted
     } = req.body;
+
+    // Check if creative strategy already exists
+    const existingCreative = await CreativeStrategy.findOne({ projectId });
+
+    // Check stage access - allow if landing pages exist OR stage is complete OR creative strategy exists
+    const hasLandingPages = project.landingPages && project.landingPages.length > 0;
+    if (!project.stages.landingPage.isCompleted && !hasLandingPages && !existingCreative) {
+      return res.status(403).json({
+        success: false,
+        message: 'Add at least one landing page to access Creative Strategy'
+      });
+    }
 
     // Debug log incoming creative plan data
     console.log('\n=== INCOMING CREATIVE PLAN DATA ===');

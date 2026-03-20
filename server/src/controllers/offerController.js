@@ -39,15 +39,15 @@ exports.getOffer = async (req, res, next) => {
       });
     }
 
-    // Check stage access
-    if (!project.stages.marketResearch.isCompleted) {
+    let offer = await Offer.findOne({ projectId });
+
+    // Check stage access - allow if market research is complete OR offer already exists (for editing)
+    if (!project.stages.marketResearch.isCompleted && !offer) {
       return res.status(403).json({
         success: false,
         message: 'Complete Market Research first to access Offer Engineering'
       });
     }
-
-    let offer = await Offer.findOne({ projectId });
 
     if (!offer) {
       // Create default offer
@@ -84,14 +84,6 @@ exports.upsertOffer = async (req, res, next) => {
       });
     }
 
-    // Check stage access
-    if (!project.stages.marketResearch.isCompleted) {
-      return res.status(403).json({
-        success: false,
-        message: 'Complete Market Research first to access Offer Engineering'
-      });
-    }
-
     const {
       functionalValues,
       emotionalValues,
@@ -104,6 +96,17 @@ exports.upsertOffer = async (req, res, next) => {
       pricing,
       isCompleted
     } = req.body;
+
+    // Check if offer already exists
+    const existingOffer = await Offer.findOne({ projectId });
+
+    // Check stage access - allow if market research is complete OR offer already exists (for editing)
+    if (!project.stages.marketResearch.isCompleted && !existingOffer) {
+      return res.status(403).json({
+        success: false,
+        message: 'Complete Market Research first to access Offer Engineering'
+      });
+    }
 
     const offerData = {
       projectId,

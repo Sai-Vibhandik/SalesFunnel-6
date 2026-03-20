@@ -210,16 +210,28 @@ export default function LandingPagesSection({ projectId, landingPages = [], onSa
     return 'Unknown';
   };
 
-  // Helper to get designer name by ID
-  const getDesignerName = (id) => {
-    if (!id) return 'Not assigned';
+  // Helper to get designer name - handles both populated object and ID
+  const getDesignerName = (assignedDesigner) => {
+    if (!assignedDesigner) return 'Not assigned';
+    // If it's already a populated object, use the name directly
+    if (typeof assignedDesigner === 'object' && assignedDesigner.name) {
+      return assignedDesigner.name;
+    }
+    // Otherwise, look up by ID in the designers array
+    const id = assignedDesigner._id || assignedDesigner;
     const designer = designers.find(d => (d._id || d)?.toString() === id.toString());
     return designer ? getMemberName(designer) : 'Unknown';
   };
 
-  // Helper to get developer name by ID
-  const getDeveloperName = (id) => {
-    if (!id) return 'Not assigned';
+  // Helper to get developer name - handles both populated object and ID
+  const getDeveloperName = (assignedDeveloper) => {
+    if (!assignedDeveloper) return 'Not assigned';
+    // If it's already a populated object, use the name directly
+    if (typeof assignedDeveloper === 'object' && assignedDeveloper.name) {
+      return assignedDeveloper.name;
+    }
+    // Otherwise, look up by ID in the developers array
+    const id = assignedDeveloper._id || assignedDeveloper;
     const developer = developers.find(d => (d._id || d)?.toString() === id.toString());
     return developer ? getMemberName(developer) : 'Unknown';
   };

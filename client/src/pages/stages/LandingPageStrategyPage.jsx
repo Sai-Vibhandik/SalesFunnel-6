@@ -79,12 +79,9 @@ export default function LandingPageStrategyPage() {
       const allDevelopers = developersList.length > 0 ? developersList : (developerLegacy ? [developerLegacy] : []);
       setDevelopers(allDevelopers);
 
-      // Check if traffic strategy is completed
-      if (!projectRes.data.stages?.trafficStrategy?.isCompleted) {
-        toast.error('Complete Traffic Strategy first to access Landing Pages');
-        navigate('/projects');
-        return;
-      }
+      // Note: We allow access even if traffic strategy is not completed
+      // This is to allow editing existing landing pages
+      // The stage gate check is handled by backend for creating new landing pages
 
       if (landingPageId) {
         // Load specific landing page from embedded array
